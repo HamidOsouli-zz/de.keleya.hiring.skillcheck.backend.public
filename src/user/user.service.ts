@@ -1,16 +1,23 @@
-import { Injectable, NotImplementedException } from '@nestjs/common';
+import { Injectable, NotImplementedException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Prisma, User } from '@prisma/client';
+import { JwtPayload } from 'src/common/types/jwtTokenUser';
+import { hashPasswordSync, matchHashedPassword } from 'src/common/utils/password';
 import { PrismaService } from '../prisma.services';
 import { AuthenticateUserDto } from './dto/authenticate-user.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { DeleteUserDto } from './dto/delete-user.dto';
 import { FindUserDto } from './dto/find-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-
+import createUserFilterSpecification from './filter/UserFilterSpecification';
+import { ConfigService } from '@nestjs/config';
 @Injectable()
 export class UserService {
-  constructor(private readonly prisma: PrismaService, private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly configService: ConfigService,
+    private readonly jwtService: JwtService,
+  ) {}
 
   /**
    * Finds users with matching fields
@@ -19,7 +26,14 @@ export class UserService {
    * @returns User[]
    */
   async find(findUserDto: FindUserDto): Promise<User[]> {
-    throw new NotImplementedException();
+    return this.prismaService.user.findMany({
+      skip: findUserDto.offset || 0,
+      take: findUserDto.limit || 15,
+      include: {
+        credentials: findUserDto.credentials,
+      },
+      where: createUserFilterSpecification(findUserDto),
+    });
   }
 
   /**
@@ -29,7 +43,7 @@ export class UserService {
    * @returns User
    */
   async findUnique(whereUnique: Prisma.UserWhereUniqueInput, includeCredentials = false) {
-    throw new NotImplementedException();
+    return null;
   }
 
   /**
@@ -39,7 +53,18 @@ export class UserService {
    * @returns result of create
    */
   async create(createUserDto: CreateUserDto) {
-    throw new NotImplementedException();
+    const { name, email, password } = createUserDto;
+    return this.prismaService.user.create({
+      data: {
+        name,
+        email,
+        credentials: {
+          create: {
+            hash: hashPasswordSync(password),
+          },
+        },
+      },
+    });
   }
 
   /**
@@ -73,7 +98,26 @@ export class UserService {
    * @returns a JWT token
    */
   async authenticateAndGetJwtToken(authenticateUserDto: AuthenticateUserDto) {
-    throw new NotImplementedException();
+    const { email, password } = authenticateUserDto;
+    const user = await this.prismaService.user.findFirst({
+      where: {
+        email: {
+          equals: email,
+        },
+      },
+      include: {
+        credentials: true,
+      },
+    });
+    const passwordIsMatch = await matchHashedPassword(password, user.credentials.hash);
+    if (user && passwordIsMatch) {
+      const jwtPayload: JwtPayload = { id: user.id, username: user.email };
+      const secret = this.configService.get<string>('JWT_SECRET');
+      const jwtToken: string = await this.jwtService.signAsync(jwtPayload, { secret });
+      return { token: jwtToken };
+    } else {
+      throw new UnauthorizedException('Check your credentials');
+    }
   }
 
   /**
@@ -83,7 +127,8 @@ export class UserService {
    * @returns true or false
    */
   async authenticate(authenticateUserDto: AuthenticateUserDto) {
-    throw new NotImplementedException();
+    const isAuthenticated = await this.authenticateAndGetJwtToken(authenticateUserDto);
+    return !!isAuthenticated;
   }
 
   /**
@@ -93,6 +138,6 @@ export class UserService {
    * @returns the decoded token if valid
    */
   async validateToken(token: string) {
-    throw new NotImplementedException();
+    return this.jwtService.decode(token);
   }
 }

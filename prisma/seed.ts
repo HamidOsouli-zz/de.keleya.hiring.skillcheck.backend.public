@@ -1,8 +1,27 @@
 import { PrismaClient } from '@prisma/client';
+import { hashPasswordSync } from '../src/common/utils/password';
 const prisma = new PrismaClient();
 
 async function main() {
-  return;
+  await prisma.user.upsert({
+    where: {
+      email: 'admin@gmail.com',
+    },
+    update: {
+      name: 'Admin',
+    },
+    create: {
+      email: 'admin@gmail.com',
+      name: 'Admin',
+      is_admin: true,
+      email_confirmed: true,
+      credentials: {
+        create: {
+          hash: hashPasswordSync('Password@123456'),
+        },
+      },
+    },
+  });
 }
 
 main()
