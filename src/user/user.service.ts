@@ -25,15 +25,31 @@ export class UserService {
    * @param findUserDto
    * @returns User[]
    */
-  async find(findUserDto: FindUserDto): Promise<User[]> {
-    return this.prismaService.user.findMany({
-      skip: findUserDto.offset || 0,
-      take: findUserDto.limit || 15,
+  async find(findUserDto: FindUserDto, user: Partial<User>): Promise<User[]> {
+    const { is_admin, id } = user;
+    return await this.prismaService.user.findMany({
+      ...((is_admin && { skip: findUserDto.offset || 0, take: findUserDto.limit || 15 }) || {}),
       include: {
-        credentials: findUserDto.credentials,
+        credentials: !!(findUserDto.credentials === 'true'),
       },
-      where: createUserFilterSpecification(findUserDto),
+      where: is_admin ? createUserFilterSpecification(findUserDto) : { id, deleted: false },
     });
+  }
+
+  /**
+   * Finds single User by id, name or email based on the loggedInUser
+   *
+   * @param whereUnique
+   * @param loggedInUser
+   * @returns User
+   */
+  async findUniqueByLoggedInUser(
+    whereUnique: Prisma.UserWhereUniqueInput,
+    user: Partial<User>,
+    includeCredentials = false,
+  ) {
+    const { id, is_admin } = user;
+    return await this.findUnique(is_admin ? whereUnique : { id }, includeCredentials);
   }
 
   /**
@@ -43,7 +59,12 @@ export class UserService {
    * @returns User
    */
   async findUnique(whereUnique: Prisma.UserWhereUniqueInput, includeCredentials = false) {
-    return null;
+    return await this.prismaService.user.findUnique({
+      include: {
+        credentials: includeCredentials,
+      },
+      where: whereUnique,
+    });
   }
 
   /**
@@ -54,7 +75,7 @@ export class UserService {
    */
   async create(createUserDto: CreateUserDto) {
     const { name, email, password } = createUserDto;
-    return this.prismaService.user.create({
+    return await this.prismaService.user.create({
       data: {
         name,
         email,
@@ -74,7 +95,13 @@ export class UserService {
    * @returns result of update
    */
   async update(updateUserDto: UpdateUserDto) {
-    throw new NotImplementedException();
+    const { id, name } = updateUserDto;
+    return await this.prismaService.user.update({
+      where: { id },
+      data: {
+        name,
+      },
+    });
   }
 
   /**
@@ -88,7 +115,15 @@ export class UserService {
    * @returns results of users and credentials table modification
    */
   async delete(deleteUserDto: DeleteUserDto) {
-    throw new NotImplementedException();
+    const { id } = deleteUserDto;
+    return await this.prismaService.user.delete({
+      where: {
+        id,
+      },
+      include: {
+        credentials: true,
+      },
+    });
   }
 
   /**
@@ -109,8 +144,11 @@ export class UserService {
         credentials: true,
       },
     });
+    if (!user) {
+      throw new UnauthorizedException();
+    }
     const passwordIsMatch = await matchHashedPassword(password, user.credentials.hash);
-    if (user && passwordIsMatch) {
+    if (passwordIsMatch) {
       const jwtPayload: JwtPayload = { id: user.id, username: user.email };
       const secret = this.configService.get<string>('JWT_SECRET');
       const jwtToken: string = await this.jwtService.signAsync(jwtPayload, { secret });

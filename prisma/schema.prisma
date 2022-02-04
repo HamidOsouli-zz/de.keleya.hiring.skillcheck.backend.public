@@ -9,15 +9,16 @@ generator client {
 
 model User {
   // the user model
-  id              Int         @id @default(autoincrement())
+  id              Int          @id @default(autoincrement())
   name            String
-  email           String      @unique
-  email_confirmed Boolean     @default(false)
-  is_admin        Boolean     @default(false)
-  created_at      DateTime    @default(now())
-  updated_at      DateTime    @default(now())
-  credentials     Credentials @relation(fields: [credentials_id], references: [id])
-  credentials_id  Int
+  email           String?
+  email_confirmed Boolean      @default(false)
+  is_admin        Boolean      @default(false)
+  deleted         Boolean      @default(false)
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @default(now())
+  credentials     Credentials? @relation(fields: [credentials_id], references: [id], onDelete: SetNull)
+  credentials_id  Int?
 
   @@map("users")
 }
@@ -29,6 +30,7 @@ model Credentials {
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
 
-  User User[]
+
+  User User?
   @@map("credentials")
 }

@@ -21,8 +21,7 @@ export class FindUserDto {
   name: string;
 
   @IsOptional()
-  @IsBoolean()
-  credentials = false;
+  credentials = 'false';
 
   @IsOptional()
   @IsString()

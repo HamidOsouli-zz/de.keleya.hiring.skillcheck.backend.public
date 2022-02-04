@@ -5,7 +5,7 @@ const createUserFilterSpecification = (findUserDto: FindUserDto) => {
   const whereCondition: Prisma.UserWhereInput = {};
   if (findUserDto.email) {
     whereCondition.email = {
-      equals: findUserDto.email,
+      contains: findUserDto.email,
     };
   }
   if (findUserDto.id) {
@@ -15,12 +15,12 @@ const createUserFilterSpecification = (findUserDto: FindUserDto) => {
   }
   if (findUserDto.name) {
     whereCondition.name = {
-      equals: findUserDto.name,
+      contains: findUserDto.name,
     };
   }
   if (findUserDto.updatedSince) {
     whereCondition.updated_at = {
-      gte: new Date(findUserDto.updatedSince),
+      gte: new Date(Number(findUserDto.updatedSince)),
     };
   }
   return whereCondition;

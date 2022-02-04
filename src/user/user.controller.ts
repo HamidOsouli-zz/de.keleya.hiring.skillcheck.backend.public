@@ -17,36 +17,39 @@ import {
 import { Request } from 'express';
 import { Admin } from 'src/common/decorators/isAdmin.decorator';
 import { EndpointIsPublic } from 'src/common/decorators/publicEndpoint.decorator';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { AuthenticateUserDto } from './dto/authenticate-user.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { DeleteUserDto } from './dto/delete-user.dto';
 import { FindUserDto } from './dto/find-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserService } from './user.service';
-import { Headers } from '@nestjs/common';
 
 @Controller('user')
+@UseGuards(JwtAuthGuard)
 export class UserController {
   constructor(private readonly usersService: UserService) {}
 
-  @Admin()
+  @HttpCode(HttpStatus.OK)
   @Get()
   async find(@Query() findUserDto: FindUserDto, @Req() req: Request) {
-    this.usersService.find(findUserDto);
+    const { user } = req;
+    return await this.usersService.find(findUserDto, user);
   }
 
-  @Admin()
   @Get(':id')
+  @HttpCode(HttpStatus.OK)
   async findUnique(@Param('id', ParseIntPipe) id, @Req() req: Request) {
-    throw new NotImplementedException();
+    const { user } = req;
+    return await this.usersService.findUniqueByLoggedInUser({ id }, user);
   }
 
+  @HttpCode(HttpStatus.OK)
   @Admin()
   @Post()
   async create(@Body() createUserDto: CreateUserDto) {
-    this.usersService.create(createUserDto);
+    return await this.usersService.create(createUserDto);
   }
-  @Admin()
   @Patch()
   async update(@Body() updateUserDto: UpdateUserDto, @Req() req: Request) {
     throw new NotImplementedException();
