@@ -11,7 +11,6 @@ import {
   Req,
   HttpCode,
   UseGuards,
-  NotImplementedException,
   HttpStatus,
 } from '@nestjs/common';
 import { Request } from 'express';

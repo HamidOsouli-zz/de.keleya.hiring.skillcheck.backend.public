@@ -76,4 +76,24 @@ yarn test
 ```
 ### Your Notes Below Here
 
-...
+### Testing Postman Reports
+
+![postman.png](reports/postman_tests.png)
+
+<br/>
+Also the json file is included in the reports folder
+
+### Testing e2e
+
+
+<img src="reports/e2e_tests.png" width="40%"/>
+<img src="reports/tests.png" width="40%"/>
+
+## Extra
+
+- Credentials could be embedded into user because there is no other table to use credentials
+- Would be better to have role and permissions table instead of is_admin to have a complete ACL
+- Would be better to have repository to invoke method from prisma directly in service layer
+- Would be better to run application in a containerized environment like docker, I have done the demonstration with docker
+- It took me about 10 hours to complete the project since I have not worked with nest and prisma before but I found them interesting
+
