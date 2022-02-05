@@ -10,6 +10,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './common/strategies/jwt.strategy';
 import { PassportModule } from '@nestjs/passport';
 import { AppController } from './app.controller';
+import { UnencryptedPasswordValidator } from './common/validators/unencrypted-password-validator';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { AppController } from './app.controller';
     UserService,
     PrismaService,
     ConfigService,
+    UnencryptedPasswordValidator,
     JwtStrategy,
     { provide: APP_FILTER, useClass: QueryExceptionFilter },
   ],

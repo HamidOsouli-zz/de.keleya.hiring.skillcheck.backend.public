@@ -9,6 +9,9 @@ export class AdminGuard extends AuthGuard('jwt') {
   }
 
   handleRequest(err, user, info, context) {
+    /**
+     * check if user is admin
+     */
     if (user && user.is_admin) return user;
     throw new UnauthorizedException();
   }

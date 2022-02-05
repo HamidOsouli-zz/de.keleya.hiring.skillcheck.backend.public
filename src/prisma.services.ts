@@ -7,10 +7,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
   async onModuleInit() {
     await this.$connect();
     await this.$use(async (params, next) => {
-      // Check incoming query type
+      // hook for beforeUpdate
       if (params.action == 'update') {
         params.args['data']['updated_at'] = new Date();
       }
+      // soft delete for user
       if (params.model == 'User' && params.action == 'delete') {
         // Change action to an update
         params.action = 'update';

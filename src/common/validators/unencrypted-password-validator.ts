@@ -1,5 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { ValidatorConstraint, ValidatorConstraintInterface, ValidationArguments } from 'class-validator';
+import {
+  registerDecorator,
+  ValidationOptions,
+  ValidatorConstraint,
+  ValidatorConstraintInterface,
+  ValidationArguments,
+} from 'class-validator';
+import { STRONG_PASSWORD_PATTERN } from '../utils/constants';
 
 export type UnencryptedPassword = string;
 
@@ -14,13 +21,25 @@ export class UnencryptedPasswordValidator implements ValidatorConstraintInterfac
 
   isValidPassword(passwordToValidate: string): boolean {
     if (!passwordToValidate) return false;
-    // TODO: implement validation rules
     if (passwordToValidate.length < 6) return false;
-    return true;
+    return STRONG_PASSWORD_PATTERN.test(passwordToValidate);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   defaultMessage(args: ValidationArguments) {
     return `Password is not complex enough`;
   }
+}
+
+export function IsPasswordStrong(validationOptions?: ValidationOptions) {
+  return function (object: Object, propertyName: string) {
+    registerDecorator({
+      name: 'IsPasswordStrong',
+      target: object.constructor,
+      propertyName: propertyName,
+      options: validationOptions,
+      constraints: [],
+      validator: UnencryptedPasswordValidator,
+    });
+  };
 }
