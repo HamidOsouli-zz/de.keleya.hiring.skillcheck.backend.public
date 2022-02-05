@@ -1,8 +1,8 @@
-import { Injectable, NotImplementedException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Prisma, User } from '@prisma/client';
-import { JwtPayload } from 'src/common/types/jwtTokenUser';
-import { hashPasswordSync, matchHashedPassword } from 'src/common/utils/password';
+import { JwtPayload } from '../common/types/jwtTokenUser';
+import { hashPasswordSync, matchHashedPassword } from '../common/utils/password';
 import { PrismaService } from '../prisma.services';
 import { AuthenticateUserDto } from './dto/authenticate-user.dto';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -49,7 +49,10 @@ export class UserService {
     includeCredentials = false,
   ) {
     const { id, is_admin } = user;
-    return await this.findUnique(is_admin ? whereUnique : { id }, includeCredentials);
+    if (!is_admin && id !== whereUnique.id) {
+      throw new UnauthorizedException();
+    }
+    return await this.findUnique(whereUnique, includeCredentials);
   }
 
   /**
@@ -94,10 +97,10 @@ export class UserService {
    * @param updateUserDto
    * @returns result of update
    */
-  async update(updateUserDto: UpdateUserDto) {
+  async update(updateUserDto: UpdateUserDto, user: Partial<User>) {
     const { id, name } = updateUserDto;
     return await this.prismaService.user.update({
-      where: { id },
+      where: { id: user.is_admin ? id : user.id },
       data: {
         name,
       },
@@ -132,7 +135,7 @@ export class UserService {
    * @param authenticateUserDto email and password for authentication
    * @returns a JWT token
    */
-  async authenticateAndGetJwtToken(authenticateUserDto: AuthenticateUserDto) {
+  async authenticateAndGetJwtToken(authenticateUserDto: AuthenticateUserDto): Promise<{ token: string }> {
     const { email, password } = authenticateUserDto;
     const user = await this.prismaService.user.findFirst({
       where: {
@@ -154,7 +157,7 @@ export class UserService {
       const jwtToken: string = await this.jwtService.signAsync(jwtPayload, { secret });
       return { token: jwtToken };
     } else {
-      throw new UnauthorizedException('Check your credentials');
+      throw new UnauthorizedException();
     }
   }
 
