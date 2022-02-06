@@ -93,7 +93,7 @@ Also the json file is included in the reports folder
 
 - Credentials could be embedded into user because there is no other table to use credentials
 - Would be better to have role and permissions table instead of is_admin to have a complete ACL
-- Would be better to have repository to invoke method from prisma directly in service layer
+- Would be better to have repository instead of invoking method from prisma directly in service layer
 - Would be better to run application in a containerized environment like docker, I have done the demonstration with docker
 - Would be better to have accessToken and refreshToken with short expiration rather than a single token with one year lifetime.
 - It took me about 10 hours to complete the project since I have not worked with nest and prisma before but I found them interesting
